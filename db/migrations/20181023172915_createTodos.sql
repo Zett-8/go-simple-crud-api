@@ -18,13 +18,13 @@ INSERT INTO todos (id, name, created_at, updated_at, deleted_at) VALUES (
     null
 ),(
     2,
-    'cook',
+    'buy milk',
     to_timestamp('2006-5-27','yyyy/mm/dd'),
     to_timestamp('2006-5-27','yyyy/mm/dd'),
     null
 ),(
     3,
-    'cook',
+    'clean room',
     to_timestamp('2006-6-27','yyyy/mm/dd'),
     to_timestamp('2006-6-27','yyyy/mm/dd'),
     null

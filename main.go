@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
+	"github.com/Zett-8/go-simple-crud-api/models"
+	"github.com/Zett-8/go-simple-crud-api/utils"
 	"github.com/gorilla/mux"
-	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
@@ -16,7 +18,7 @@ func main() {
 
 	r.HandleFunc("/", Index).Methods("GET")
 	r.HandleFunc("/todo", getAllTasks).Methods("GET")
-	r.HandleFunc("/todo/{id}", getSpecificTask).Methods("GET")
+	r.HandleFunc("/todo/{id}", getTaskById).Methods("GET")
 
 	http.Handle("/", r)
 	fmt.Println("= server will start =")
@@ -28,32 +30,33 @@ func Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func getAllTasks(w http.ResponseWriter, r *http.Request) {
-	db, err := gorm.Open("postgres", "host=localhost port=5432 user=postgres dbname=postgres password=postgres sslmode=disable")
-	if err != nil {
-		panic(err)
-	}
-
+	db := utils.ConnectDB()
 	defer db.Close()
-	// q := Todo{gorm.Model.Deleted_at: nil}
+
 	todo := []models.Todo{}
-	rr := db.Find(&todo)
+	res := db.Find(&todo)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(rr.Value)
+	json.NewEncoder(w).Encode(res.Value)
 }
 
-func getSpecificTask(w http.ResponseWriter, r *http.Request) {
-	// params := mux.Vars(r)
-	// id, _ := strconv.Atoi(params["id"])
+func getTaskById(w http.ResponseWriter, r *http.Request) {
+	db := utils.ConnectDB()
+	defer db.Close()
 
-	// for _, v := range tasks {
-	// 	if v.Id == id {
-	// 		w.Header().Set("Content-Type", "application/json")
-	// 		json.NewEncoder(w).Encode(v)
-	// 		fmt.Println(v)
-	// 		return
-	// 	}
-	// }
-	// w.WriteHeader(400)
-	// json.NewEncoder(w).Encode([]string{})
+	params := mux.Vars(r)
+	id, _ := strconv.Atoi(params["id"])
+
+	todo := models.Todo{}
+	res := db.First(&todo, id)
+
+	if res.Error != nil {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode([]string{})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(res)
+	return
 }
