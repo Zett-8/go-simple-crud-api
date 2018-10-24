@@ -17,8 +17,11 @@ func main() {
 	r := mux.NewRouter().StrictSlash(true)
 
 	r.HandleFunc("/", Index).Methods("GET")
-	r.HandleFunc("/todo", getAllTasks).Methods("GET")
+	r.HandleFunc("/todo", getTasks).Methods("GET")
+	r.HandleFunc("/todo/create/", createTask).Methods("POST")
 	r.HandleFunc("/todo/{id}", getTaskById).Methods("GET")
+	r.HandleFunc("/todo/{id}/update/", updateTask).Methods("PUT")
+	r.HandleFunc("/todo/{id}/delete/", deleteTask).Methods("DELETE")
 
 	http.Handle("/", r)
 	fmt.Println("= server will start =")
@@ -29,7 +32,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "HELLO WORLD")
 }
 
-func getAllTasks(w http.ResponseWriter, r *http.Request) {
+func getTasks(w http.ResponseWriter, r *http.Request) {
 	db := utils.ConnectDB()
 	defer db.Close()
 
@@ -45,10 +48,10 @@ func getTaskById(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
+	todo_id, _ := strconv.Atoi(params["id"])
 
 	todo := models.Todo{}
-	res := db.First(&todo, id)
+	res := db.First(&todo, todo_id)
 
 	if res.Error != nil {
 		w.WriteHeader(400)
@@ -57,6 +60,61 @@ func getTaskById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(res)
+	json.NewEncoder(w).Encode(res.Value)
 	return
+}
+
+func createTask(w http.ResponseWriter, r *http.Request) {
+
+	db := utils.ConnectDB()
+	defer db.Close()
+
+	var newTodo models.Todo
+
+	decoder := json.NewDecoder(r.Body)
+
+	err := decoder.Decode(&newTodo)
+	if err != nil {
+		panic(err)
+	}
+
+	if newTodo.Name == "" {
+		w.WriteHeader(400)
+		return
+	}
+
+	db.Create(&newTodo)
+
+	w.WriteHeader(200)
+	json.NewEncoder(w).Encode(newTodo)
+}
+
+func updateTask(w http.ResponseWriter, r *http.Request) {
+	db := utils.ConnectDB()
+	defer db.Close()
+
+	params := mux.Vars(r)
+	id, _ := strconv.Atoi(params["id"])
+
+	oldTodo := models.Todo{}
+	oldTodo.ID = uint(id)
+
+	newTodo := models.Todo{}
+
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&newTodo)
+	if err != nil {
+		panic(err)
+	}
+
+	if newTodo.Name == "" {
+		w.WriteHeader(400)
+		return
+	}
+
+	db.Model(&oldTodo).Update(&newTodo)
+}
+
+func deleteTask(w http.ResponseWriter, r *http.Request) {
+
 }
