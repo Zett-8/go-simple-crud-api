@@ -116,5 +116,14 @@ func updateTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteTask(w http.ResponseWriter, r *http.Request) {
+	db := utils.ConnectDB()
+	defer db.Close()
 
+	params := mux.Vars(r)
+	id, _ := strconv.Atoi(params["id"])
+
+	todo := models.Todo{}
+	todo.ID = uint(id)
+
+	db.Delete(&todo)
 }
